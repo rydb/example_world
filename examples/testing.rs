@@ -1,36 +1,46 @@
-use std::fmt::Display;
+//! A simple 3D scene with light shining over a cube sitting on a plane.
 
-use bevy::{prelude::*, utils::HashMap};
+use bevy::prelude::*;
 
 fn main() {
     App::new()
-    .add_plugins(DefaultPlugins)
-    .init_resource::<HelloCounter>()
-    .init_resource::<ShoppingCart>()
-    .add_systems(Startup, add_to_party("bob", "ice cream"))
-    .add_systems(Startup, add_to_party("joe", "spaghetti"))
-    .add_systems(Startup, add_to_party("sam", "enchiladas"))
-    .run();
+        .add_plugins(DefaultPlugins)
+        .add_systems(Startup, setup)
+        .run();
 }
 
-#[derive(Resource, Default)]
-pub struct HelloCounter(u8);
-
-#[derive(Resource, Default)]
-pub struct ShoppingCart(HashMap<String, String>);
-
-/// greet geust at the door, and add their favorite food to the shopping cart.
-pub fn add_to_party(name: impl Into<String> + Display + Clone, favorite_food: impl Into<String> + Display + Clone) -> 
-    impl Fn(ResMut<HelloCounter>, ResMut<ShoppingCart>)
-{
-    move |mut counter, mut shopping_cart| {
-        println!("hello, {:#}!", name);
-        counter.0 += 1;
-
-        println!("greeting total now: {:#}", counter.0);
-
-        shopping_cart.0.insert(name.clone().into(), favorite_food.clone().into());
-
-        println!("shopping cart now: {:#?}", shopping_cart.0);
-    }
+/// set up a simple 3D scene
+fn setup(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    // circular base
+    commands.spawn(PbrBundle {
+        mesh: meshes.add(Circle::new(4.0)),
+        material: materials.add(Color::WHITE),
+        transform: Transform::from_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)),
+        ..default()
+    });
+    // cube
+    commands.spawn(PbrBundle {
+        mesh: meshes.add(Cuboid::new(1.0, 1.0, 1.0)),
+        material: materials.add(Color::srgb_u8(124, 144, 255)),
+        transform: Transform::from_xyz(0.0, 0.5, 0.0),
+        ..default()
+    });
+    // light
+    commands.spawn(PointLightBundle {
+        point_light: PointLight {
+            shadows_enabled: true,
+            ..default()
+        },
+        transform: Transform::from_xyz(4.0, 8.0, 4.0),
+        ..default()
+    });
+    // camera
+    commands.spawn(Camera3dBundle {
+        transform: Transform::from_xyz(-2.5, 4.5, 9.0).looking_at(Vec3::ZERO, Vec3::Y),
+        ..default()
+    });
 }
